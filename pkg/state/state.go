@@ -1091,6 +1091,15 @@ type PrepareChartKey struct {
 func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurrency int, helmfileCommand string, opts ChartPrepareOptions) (map[PrepareChartKey]string, []error) {
 	var selected []ReleaseSpec
 
+	// resolve deps before anything else to have correct version from eventual lock file
+	if !opts.SkipResolve {
+		updated, err := st.ResolveDeps()
+		if err != nil {
+			return nil, []error{err}
+		}
+		*st = *updated
+	}
+
 	if len(st.Selectors) > 0 {
 		var err error
 
@@ -1114,14 +1123,6 @@ func (st *HelmState) PrepareCharts(helm helmexec.Interface, dir string, concurre
 
 	jobQueue := make(chan *ReleaseSpec, len(releases))
 	results := make(chan *chartPrepareResult, len(releases))
-
-	if !opts.SkipResolve {
-		updated, err := st.ResolveDeps()
-		if err != nil {
-			return nil, []error{err}
-		}
-		*st = *updated
-	}
 
 	var builds []*chartPrepareResult
 
