@@ -172,7 +172,6 @@ func resolveDependencies(st *HelmState, depMan *chartDependencyManager, unresolv
 		}
 		resolvedChart, err := resolved.Get(chart, r.Name)
 		if err == nil {
-			fmt.Printf("chart=%s, release=%s, resolved=%s", chart, r.Name, resolvedChart)
 			updated.Releases[i].Version = resolvedChart
 		}
 	}
