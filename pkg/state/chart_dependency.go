@@ -107,15 +107,31 @@ func (d *ResolvedDependencies) add(dep ResolvedChartDependency) error {
 	} else {
 		deps = append(deps, dep)
 	}
-	d.deps[dep.ChartName] = deps
+	d.deps[dep.Alias] = deps
 	return nil
 }
 
-func (d *ResolvedDependencies) Get(chart, release string) (string, error) {
-	deps, exists := d.deps[chart]
+func (d *ResolvedDependencies) Get(chart, versionConstraint, release string) (string, error) {
+	if versionConstraint == "" {
+		versionConstraint = "*"
+	}
+
+	deps, exists := d.deps[release]
+
 	if exists {
 		for _, dep := range deps {
-			if dep.Alias == release {
+			if dep.Alias != release {
+				continue
+			}
+			constraint, err := semver.NewConstraint(versionConstraint)
+			if err != nil {
+				return "", err
+			}
+			version, err := semver.NewVersion(dep.Version)
+			if err != nil {
+				return "", err
+			}
+			if constraint.Check(version) {
 				return dep.Version, nil
 			}
 		}
@@ -170,10 +186,12 @@ func resolveDependencies(st *HelmState, depMan *chartDependencyManager, unresolv
 		if !ok {
 			continue
 		}
-		resolvedChart, err := resolved.Get(chart, r.Name)
-		if err == nil {
-			updated.Releases[i].Version = resolvedChart
+		resolvedChart, err := resolved.Get(chart, r.Version, r.Name)
+		if err != nil {
+			return nil, err
 		}
+
+		updated.Releases[i].Version = resolvedChart
 	}
 
 	return &updated, nil

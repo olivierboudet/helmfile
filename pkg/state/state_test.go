@@ -2285,7 +2285,7 @@ func TestHelmState_ResolveDeps_LockFile_DifferentVersions(t *testing.T) {
 				{
 					Name:    "envoy2",
 					Chart:   "stable/envoy",
-					Version: "1.0.1",
+					Version: ">=1.0.0, <1.1.0",
 				},
 			},
 			Repositories: []RepositorySpec{
